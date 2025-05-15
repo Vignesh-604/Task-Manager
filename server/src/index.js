@@ -30,3 +30,6 @@ connectDB()
     .catch((e) => console.log("Connection error: ", e))
 
 
+import userRoutes from './routes/user.routes.js'
+
+app.use("/api/users", userRoutes)
