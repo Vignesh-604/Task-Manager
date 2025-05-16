@@ -78,33 +78,13 @@ const deleteTask = async (req, res) => {
   }
 };
 
-const getTasksOfUser = async (req, res) => {
-  const userId = req.params.userId
-
-  const createdTasks = await Task.find({ createdBy: userId })
-    .populate("assignedTo")
-    .sort({ dueDate: 1 });
-
-  const assignedTasks = await Task.find({ assignedTo: userId })
-    .populate("createdBy")
-    .sort({ dueDate: 1 });
-
-  return res.status(200).json(
-    new ApiResponse(200, {
-      createdTasks,
-      assignedTasks,
-    }, "Fetched user's tasks")
-  );
-};
-
+// Updated getTaskStats - exactly matches your mockStats format
 const getTaskStats = async (req, res) => {
   const userId = req.user._id;
 
   try {
     const createdTasks = await Task.find({ createdBy: userId });
     const assignedTasks = await Task.find({ assignedTo: userId });
-
-    const allTasks = [...createdTasks, ...assignedTasks];
 
     const now = new Date();
 
@@ -119,7 +99,8 @@ const getTaskStats = async (req, res) => {
       overdueCount: 0
     };
 
-    for (const task of allTasks) {
+    // Count tasks by status
+    for (const task of [...createdTasks, ...assignedTasks]) {
       if (task.status === "pending") stats.statusCount.pending++;
       if (task.status === "in-progress") stats.statusCount.inProgress++;
       if (task.status === "completed") stats.statusCount.completed++;
@@ -135,6 +116,52 @@ const getTaskStats = async (req, res) => {
   }
 };
 
+// Get all tasks for a user (both assigned and created)
+const getTasksOfUser = async (req, res) => {
+  const userId = req.params.userId;
+  const type = req.query.type
+
+  let taskList = []
+
+  if (type == "createdBy") {
+    taskList = await Task.find({ createdBy: userId })
+      .populate("assignedTo", "name email")
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+  }
+  else if (type == "assignedBy") {
+    taskList = await Task.find({ assignedTo: userId })
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email")
+      .sort({ createdAt: -1 });
+  }
+  else {
+    taskList = await Task.find()
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email")
+      .sort({ createdAt: -1 });
+  }
+
+  // Format tasks to match your mockTasks format
+  const tasks = taskList.map(task => ({
+    _id: task._id,
+    title: task.title,
+    description: task.description,
+    dueDate: task.dueDate,
+    priority: task.priority,
+    status: task.status,
+    createdBy: {
+      _id: task.createdBy._id,
+      name: task.createdBy.name
+    },
+    assignedTo: task.assignedTo ? {
+      _id: task.assignedTo._id,
+      name: task.assignedTo.name
+    } : null
+  }));
+
+  return res.status(200).json(new ApiResponse(200, tasks, "Tasks fetched successfully"));
+};
 
 
 export { createTask, updateTask, deleteTask, getTasksOfUser, getTaskStats }

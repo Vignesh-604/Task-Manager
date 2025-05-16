@@ -49,36 +49,32 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 const loginUser = async (req, res) => {
-    try {
-        const { email, password } = req.body
-        if (!email || email.trim() === "") {
-            return res.status(400).json(new ApiResponse(400, null, "Email is required!!"))
-        }
-
-        const user = await User.findOne({ email })
-        if (!user) {
-            return res.status(404).json(new ApiResponse(404, null, "Incorrect email"))
-        }
-
-        const validPassword = await user.isPasswordCorrect(password)
-        if (!validPassword) {
-            return res.status(404).json(new ApiResponse(404, null, "Password incorrect"))
-        }
-
-        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
-
-        const loggedInUser = await User.findById(user._id).select(" _id name email role ")
-
-        const userData = CryptoJS.AES.encrypt(JSON.stringify(loggedInUser), process.env.VITE_KEY).toString()
-
-        return res.status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
-            .cookie("user", userData)
-            .json(new ApiResponse(200, null, "User logged in successfully!!"))
-    } catch (error) {
-        return res.status(500).json(new ApiResponse(500, error, "Something went wrong while logging in"))
+    const { email, password } = req.body
+    if (!email || email.trim() === "") {
+        return res.status(400).json(new ApiResponse(400, null, "Email is required!!"))
     }
+
+    const user = await User.findOne({ email })
+    if (!user) {
+        return res.status(404).json(new ApiResponse(404, null, "Incorrect email"))
+    }
+
+    const validPassword = await user.isPasswordCorrect(password)
+    if (!validPassword) {
+        return res.status(404).json(new ApiResponse(404, null, "Password incorrect"))
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const loggedInUser = await User.findById(user._id).select(" _id name email role ")
+
+    const userData = CryptoJS.AES.encrypt(JSON.stringify(loggedInUser), process.env.KEY).toString()
+
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .cookie("user", userData)
+        .json(new ApiResponse(200, null, "User logged in successfully!!"))
 }
 
 const logoutUser = async (req, res) => {

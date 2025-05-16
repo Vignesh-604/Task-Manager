@@ -10,7 +10,7 @@ router.put("/:taskId", verifyJWT, updateTask)
 
 router.delete("/:taskId", verifyJWT, deleteTask)
 
-router.get("/:userId", verifyJWT, getTasksOfUser)
+router.get("/user/:userId", verifyJWT, getTasksOfUser)
 
 router.get("/stats", verifyJWT, getTaskStats);
 
