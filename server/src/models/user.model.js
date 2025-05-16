@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose"
 import bycrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
     name: {
         type: String,
         required: true
