@@ -1,38 +1,32 @@
 import User from "../models/user.model.js"
-import Task from "../models/task.model.js"
 import ApiResponse from "../utils/ApiResponse.js"
 import CryptoJS from "crypto-js"
 
 const signupUser = async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body
-        if ([name, email, password, country].some((field) => field?.trim() === "")) {
-            return res.status(400).json(new ApiResponse(400, null, "All input fields must be filled"))
-        }
-
-        const existingUser = await User.findOne({ email })
-        if (existingUser) {
-            return res.status(400).json(new ApiResponse(400, null, "User already exists"))
-        }
-
-        const user = await User.create({ name, email, password, role })
-
-        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
-
-        const createdUser = await User.findById(user._id).select(" _id email name country ")
-        const userData = CryptoJS.AES.encrypt(JSON.stringify(createdUser), process.env.VITE_KEY).toString()
-
-        if (!createdUser) return res.status(500).json(new ApiResponse(500, null, "Something went wrong while registering the user"))
-
-        return res.status(201)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
-            .cookie("user", userData)
-            .json(new ApiResponse(200, createdUser, "User Registered successfully!!"))
-
-    } catch (error) {
-        return res.status(500).json(new ApiResponse(500, error, "Something went wrong while"))
+    const { name, email, password, role } = req.body
+    if ([name, email, password, role].some((field) => field?.trim() === "")) {
+        return res.status(400).json(new ApiResponse(400, null, "All input fields must be filled"))
     }
+
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+        return res.status(400).json(new ApiResponse(400, null, "User already exists"))
+    }
+
+    const user = await User.create({ name, email, password, role })
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+
+    const createdUser = await User.findById(user._id).select(" _id email name role ")
+    const userData = CryptoJS.AES.encrypt(JSON.stringify(createdUser), process.env.VITE_KEY).toString()
+
+    if (!createdUser) return res.status(500).json(new ApiResponse(500, null, "Something went wrong while registering the user"))
+
+    return res.status(201)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .cookie("user", userData)
+        .json(new ApiResponse(200, createdUser, "User Registered successfully!!"))
 }
 
 const options = { httpOnly: true, secure: true }
@@ -73,7 +67,7 @@ const loginUser = async (req, res) => {
 
         const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
-        const loggedInUser = await User.findById(user._id).select(" _id name email ")
+        const loggedInUser = await User.findById(user._id).select(" _id name email role ")
 
         const userData = CryptoJS.AES.encrypt(JSON.stringify(loggedInUser), process.env.VITE_KEY).toString()
 
